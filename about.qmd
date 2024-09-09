@@ -1,0 +1,20 @@
+---
+title: "About me"
+image: profile.jpg
+about:
+  template: jolla
+  links:
+    - icon: twitter
+      text: Twitter
+      href: https://x.com/hunglp
+    - icon: github
+      text: Github
+      href: https://github.com/phihung
+
+---
+
+Hey, I’m Phi – a developer, AI engineer, and founder with a passion for building cool stuff.
+
+I mostly write about things I enjoy, like AI, Python, Rust, and Math. You might see me dive into other tech topics too as I explore new things. It’s all pretty laid-back, and I’m just sharing what I find interesting or useful.
+
+If any of this helps you out, awesome! Feel free to reach out if you have questions or just want to chat – I’d love to connect.
