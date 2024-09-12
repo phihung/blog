@@ -13,6 +13,10 @@ website:
         href: https://github.com/phihung
       - icon: twitter
         href: https://x.com/hunglp
+  comments:
+    giscus:
+      repo: phihung/blog
+
 format:
   html:
     theme: cosmo
