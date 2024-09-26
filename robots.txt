@@ -1,1 +1,1 @@
-Sitemap: https://phihung.github.io/blog/sitemap.xml
+Sitemap: https://blog.phle.dev/sitemap.xml
