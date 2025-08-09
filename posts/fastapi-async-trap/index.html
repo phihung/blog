@@ -6,8 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="phi">
+<meta name="dcterms.date" content="2025-08-08">
 
-<title>Random Bytes</title>
+<title>Stop Using async in FastAPI (Unless You Mean It) – Random Bytes</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -20,27 +22,59 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-listing/list.min.js"></script>
-<script src="site_libs/quarto-listing/quarto-listing.js"></script>
-<script src="site_libs/quarto-html/quarto.js"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -68,67 +102,9 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
-<script>
 
-  window.document.addEventListener("DOMContentLoaded", function (_event) {
-    const listingTargetEl = window.document.querySelector('#listing-listing .list');
-    if (!listingTargetEl) {
-      // No listing discovered, do not attach.
-      return; 
-    }
 
-    const options = {
-      valueNames: ['listing-date','listing-title','listing-author','listing-image','listing-description','listing-categories',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
-      
-      searchColumns: ["listing-date","listing-title","listing-author","listing-image","listing-description","listing-categories"],
-    };
-
-    window['quarto-listings'] = window['quarto-listings'] || {};
-    window['quarto-listings']['listing-listing'] = new List('listing-listing', options);
-
-    if (window['quarto-listing-loaded']) {
-      window['quarto-listing-loaded']();
-    }
-  });
-
-  window.addEventListener('hashchange',() => {
-    if (window['quarto-listing-loaded']) {
-      window['quarto-listing-loaded']();
-    }
-  })
-  </script>
-
-  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
-
-<script type="text/javascript">
-const typesetMath = (el) => {
-  if (window.MathJax) {
-    // MathJax Typeset
-    window.MathJax.typeset([el]);
-  } else if (window.katex) {
-    // KaTeX Render
-    var mathElements = el.getElementsByClassName("math");
-    var macros = [];
-    for (var i = 0; i < mathElements.length; i++) {
-      var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
-        window.katex.render(texText.data, mathElements[i], {
-          displayMode: mathElements[i].classList.contains('display'),
-          throwOnError: false,
-          macros: macros,
-          fleqn: false
-        });
-      }
-    }
-  }
-}
-window.Quarto = {
-  typesetMath
-};
-</script>
-
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="../../styles.css">
 </head>
 
 <body class="nav-fixed">
@@ -138,7 +114,7 @@ window.Quarto = {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../../index.html">
     <span class="navbar-title">Random Bytes</span>
     </a>
   </div>
@@ -149,7 +125,7 @@ window.Quarto = {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link" href="./about.html"> 
+    <a class="nav-link" href="../../about.html"> 
 <span class="menu-text">About me</span></a>
   </li>  
   <li class="nav-item compact">
@@ -170,104 +146,171 @@ window.Quarto = {
     </nav>
 </header>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Stop Using async in FastAPI (Unless You Mean It)</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">python</div>
+                <div class="quarto-category">fastapi</div>
+                <div class="quarto-category">async</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>phi </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">August 8, 2025</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        
-    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(2)</span></div><div class="category" data-category="async">async <span class="quarto-category-count">(1)</span></div><div class="category" data-category="fastapi">fastapi <span class="quarto-category-count">(1)</span></div><div class="category" data-category="packaging">packaging <span class="quarto-category-count">(1)</span></div><div class="category" data-category="python">python <span class="quarto-category-count">(2)</span></div></div></div>
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#stop-using-async-in-fastapi-unless-you-mean-it" id="toc-stop-using-async-in-fastapi-unless-you-mean-it" class="nav-link active" data-scroll-target="#stop-using-async-in-fastapi-unless-you-mean-it">Stop Using async in FastAPI (Unless You Mean It)</a>
+  <ul class="collapse">
+  <li><a href="#why-it-worked" id="toc-why-it-worked" class="nav-link" data-scroll-target="#why-it-worked">Why it worked</a></li>
+  <li><a href="#quick-demo" id="toc-quick-demo" class="nav-link" data-scroll-target="#quick-demo">Quick demo</a>
+  <ul class="collapse">
+  <li><a href="#benchmark-apachebench-300-req-100-concurrency" id="toc-benchmark-apachebench-300-req-100-concurrency" class="nav-link" data-scroll-target="#benchmark-apachebench-300-req-100-concurrency">Benchmark (ApacheBench, 300 req, 100 concurrency)</a></li>
+  </ul></li>
+  <li><a href="#mixing-sync-async" id="toc-mixing-sync-async" class="nav-link" data-scroll-target="#mixing-sync-async">Mixing sync + async</a></li>
+  <li><a href="#takeaways" id="toc-takeaways" class="nav-link" data-scroll-target="#takeaways">Takeaways</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
-<main class="content quarto-banner-title-block column-page-left" id="quarto-document-content">
+<main class="content quarto-banner-title-block" id="quarto-document-content">
 
 
 
 
 
+<section id="stop-using-async-in-fastapi-unless-you-mean-it" class="level1">
+<h1>Stop Using async in FastAPI (Unless You Mean It)</h1>
+<p>I recently debugged a legacy FastAPI app that was crawling under load. The culprit? Every endpoint was marked <code>async def</code>, including ones doing heavy, blocking work.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="at">@app.post</span>(<span class="st">"/my-route"</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> my_endpoint():</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> parse_file()  <span class="co"># may take up to 60 seconds</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The original developer probably assumed “async = faster.” In reality, this endpoint <strong>processed one request at a time</strong>. Each call blocked the asyncio event loop until it finished, so nothing else could run.</p>
+<p>The fix was embarrassingly simple:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="at">@app.post</span>(<span class="st">"/my-route-sync"</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> my_endpoint_sync():</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> parse_file()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<hr>
+<section id="why-it-worked" class="level2">
+<h2 class="anchored" data-anchor-id="why-it-worked">Why it worked</h2>
+<p>FastAPI treats sync and async endpoints very differently:</p>
+<ul>
+<li><strong><code>def</code> (sync)</strong> → runs in a thread pool, so blocking work happens outside the event loop.</li>
+<li><strong><code>async def</code></strong> → runs on the event loop thread, so blocking work freezes everything.</li>
+</ul>
+<p>Since <code>parse_file()</code> was mostly I/O-bound (disk reads, system calls), the GIL wasn’t an issue — multiple requests could run in parallel in separate threads.</p>
+<p>The “fake async” version was a classic footgun: blocking calls inside an async function lock up the loop and kill concurrency.</p>
+<blockquote class="blockquote">
+<p>If you want the long-form, burger-themed explanation, see <a href="https://fastapi.tiangolo.com/async/">FastAPI’s own docs on async</a>.</p>
+</blockquote>
+<hr>
+</section>
+<section id="quick-demo" class="level2">
+<h2 class="anchored" data-anchor-id="quick-demo">Quick demo</h2>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastapi <span class="im">import</span> FastAPI</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>app <span class="op">=</span> FastAPI()</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">@app.get</span>(<span class="st">"/sync"</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sync_endpoint():</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    time.sleep(<span class="fl">0.5</span>)  <span class="co"># blocks, but in a thread</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">@app.get</span>(<span class="st">"/async"</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> async_endpoint():</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    time.sleep(<span class="fl">0.5</span>)  <span class="co"># blocks event loop</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="benchmark-apachebench-300-req-100-concurrency" class="level3">
+<h3 class="anchored" data-anchor-id="benchmark-apachebench-300-req-100-concurrency">Benchmark (ApacheBench, 300 req, 100 concurrency)</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Endpoint</th>
+<th>Req/sec</th>
+<th>Time/req</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>/sync</code></td>
+<td>60</td>
+<td>0.8s</td>
+</tr>
+<tr class="even">
+<td><code>/async</code></td>
+<td>1.98</td>
+<td>31s</td>
+</tr>
+</tbody>
+</table>
+<p>The sync version is <strong>~30× faster</strong> here.</p>
+<hr>
+</section>
+</section>
+<section id="mixing-sync-async" class="level2">
+<h2 class="anchored" data-anchor-id="mixing-sync-async">Mixing sync + async</h2>
+<p>What if you need both?</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="at">@app.post</span>(<span class="st">"/mixed"</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> mixed_endpoint():</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    parse_file()        <span class="co"># blocking</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> llm_call()    <span class="co"># true async</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This must be <code>async</code> because it uses <code>await</code>, but <code>parse_file()</code> still blocks the loop.</p>
+<p><strong>Solution:</strong> offload the blocking work:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastapi.concurrency <span class="im">import</span> run_in_threadpool</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">@app.get</span>(<span class="st">"/mixed-fast"</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> mixed_endpoint():</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> run_in_threadpool(parse_file)  <span class="co"># no loop blocking</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> llm_call()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Benchmark: <strong>20× faster</strong> than the naive mixed version.</p>
+<hr>
+</section>
+<section id="takeaways" class="level2">
+<h2 class="anchored" data-anchor-id="takeaways">Takeaways</h2>
+<ul>
+<li><p><code>async def</code> is <strong>not</strong> a performance flag — it’s a contract: “I will not block the loop.”</p></li>
+<li><p>For blocking I/O or CPU-bound work:</p>
+<ul>
+<li>Use <code>def</code> (FastAPI runs it in a thread pool)</li>
+<li>Or <code>await run_in_threadpool(...)</code> inside async functions</li>
+</ul></li>
+<li><p>Reserve <code>async</code> for truly non-blocking code.</p></li>
+</ul>
+<p>Async is powerful, but misused, it’s the easiest way to turn a fast FastAPI app into a single-lane road with a 10-mile backup.</p>
 
 
+</section>
+</section>
 
-<div class="quarto-listing quarto-listing-container-default" id="listing-listing">
-<div class="list quarto-listing-default">
-<div class="quarto-post image-right" data-index="0" data-categories="python,fastapi,async" data-listing-date-sort="1754604000000" data-listing-file-modified-sort="1754697924390" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="3" data-listing-word-count-sort="413">
-<div class="thumbnail">
-<p><a href="./posts/fastapi-async-trap/index.html" class="no-external"></a></p><a href="./posts/fastapi-async-trap/index.html" class="no-external">
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-</a><p><a href="./posts/fastapi-async-trap/index.html" class="no-external"></a></p>
-</div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./posts/fastapi-async-trap/index.html" class="no-external">Stop Using async in FastAPI (Unless You Mean It)</a>
-</h3>
-<div class="listing-subtitle">
-<a href="./posts/fastapi-async-trap/index.html" class="no-external"></a>
-</div>
-<div class="listing-categories">
-<div class="listing-category" onclick="window.quartoListingCategory('python'); return false;">
-python
-</div>
-<div class="listing-category" onclick="window.quartoListingCategory('fastapi'); return false;">
-fastapi
-</div>
-<div class="listing-category" onclick="window.quartoListingCategory('async'); return false;">
-async
-</div>
-</div>
-<div class="listing-description">
-<a href="./posts/fastapi-async-trap/index.html" class="no-external">I recently debugged a legacy FastAPI app that was crawling under load. The culprit? Every endpoint was marked <code>async def</code>, including ones doing heavy, blocking work.</a>
-</div>
-</div>
-<div class="metadata">
-<a href="./posts/fastapi-async-trap/index.html" class="no-external">
-<div class="listing-date">
-Aug 8, 2025
-</div>
-<div class="listing-author">
-phi
-</div>
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="1" data-categories="python,packaging" data-listing-date-sort="1725746400000" data-listing-file-modified-sort="1725914736513" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="6" data-listing-word-count-sort="1187">
-<div class="thumbnail">
-<p><a href="./posts/python-setup-2024/index.html" class="no-external"></a></p><a href="./posts/python-setup-2024/index.html" class="no-external">
-<p><img loading="lazy" src="./posts/python-setup-2024/image.jpg" class="thumbnail-image"></p>
-</a><p><a href="./posts/python-setup-2024/index.html" class="no-external"></a></p>
-</div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./posts/python-setup-2024/index.html" class="no-external">Setting Up a Python Project in 2024: uv and vscode</a>
-</h3>
-<div class="listing-subtitle">
-<a href="./posts/python-setup-2024/index.html" class="no-external"></a>
-</div>
-<div class="listing-categories">
-<div class="listing-category" onclick="window.quartoListingCategory('python'); return false;">
-python
-</div>
-<div class="listing-category" onclick="window.quartoListingCategory('packaging'); return false;">
-packaging
-</div>
-</div>
-<div class="listing-description">
-<a href="./posts/python-setup-2024/index.html" class="no-external">Minimal setup to start a <code>python</code> project in 2024: with <code>uv</code>, <code>vscode</code>, <code>ruff</code> and <code>pytest</code>.</a>
-</div>
-</div>
-<div class="metadata">
-<a href="./posts/python-setup-2024/index.html" class="no-external">
-<div class="listing-date">
-Sep 8, 2024
-</div>
-<div class="listing-author">
-phi
-</div>
-</a>
-</div>
-</div>
-</div>
-<div class="listing-no-matching d-none">
-No matching items
-</div>
-</div></main> <!-- /main -->
+</main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const toggleBodyColorMode = (bsSheetEl) => {
@@ -688,6 +731,10 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   }
 });
 </script>
+<script src="https://giscus.app/client.js" data-repo="phihung/blog" data-repo-id="R_kgDOMvNR0w" data-category="General" data-category-id="DIC_kwDOMvNR084Ciad7" data-mapping="title" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="light" data-lang="en" crossorigin="anonymous" async="">
+</script>
+<input type="hidden" id="giscus-base-theme" value="light">
+<input type="hidden" id="giscus-alt-theme" value="dark">
 </div> <!-- /content -->
 
 

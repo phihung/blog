@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/fastapi-async-trap/index.html",
       "/posts/python-setup-2024/index.html"
     ]
   }

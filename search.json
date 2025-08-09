@@ -7,6 +7,41 @@
     "text": "AI Engineer | Developer | Founder @lajavaness | 🇫🇷🇻🇳 | Coding & Hiking\nI write about things I enjoy, like AI, Python, Rust, and Maths."
   },
   {
+    "objectID": "posts/fastapi-async-trap/index.html",
+    "href": "posts/fastapi-async-trap/index.html",
+    "title": "Stop Using async in FastAPI (Unless You Mean It)",
+    "section": "",
+    "text": "I recently debugged a legacy FastAPI app that was crawling under load. The culprit? Every endpoint was marked async def, including ones doing heavy, blocking work.\nExample:\n@app.post(\"/my-route\")\nasync def my_endpoint():\n    return parse_file()  # may take up to 60 seconds\nThe original developer probably assumed “async = faster.” In reality, this endpoint processed one request at a time. Each call blocked the asyncio event loop until it finished, so nothing else could run.\nThe fix was embarrassingly simple:\n@app.post(\"/my-route-sync\")\ndef my_endpoint_sync():\n    return parse_file()\n\n\n\nFastAPI treats sync and async endpoints very differently:\n\ndef (sync) → runs in a thread pool, so blocking work happens outside the event loop.\nasync def → runs on the event loop thread, so blocking work freezes everything.\n\nSince parse_file() was mostly I/O-bound (disk reads, system calls), the GIL wasn’t an issue — multiple requests could run in parallel in separate threads.\nThe “fake async” version was a classic footgun: blocking calls inside an async function lock up the loop and kill concurrency.\n\nIf you want the long-form, burger-themed explanation, see FastAPI’s own docs on async.\n\n\n\n\n\nimport time\nfrom fastapi import FastAPI\n\napp = FastAPI()\n\n@app.get(\"/sync\")\ndef sync_endpoint():\n    time.sleep(0.5)  # blocks, but in a thread\n\n@app.get(\"/async\")\nasync def async_endpoint():\n    time.sleep(0.5)  # blocks event loop\n\n\n\n\n\nEndpoint\nReq/sec\nTime/req\n\n\n\n\n/sync\n60\n0.8s\n\n\n/async\n1.98\n31s\n\n\n\nThe sync version is ~30× faster here.\n\n\n\n\n\nWhat if you need both?\n@app.post(\"/mixed\")\nasync def mixed_endpoint():\n    parse_file()        # blocking\n    await llm_call()    # true async\nThis must be async because it uses await, but parse_file() still blocks the loop.\nSolution: offload the blocking work:\nfrom fastapi.concurrency import run_in_threadpool\n\n@app.get(\"/mixed-fast\")\nasync def mixed_endpoint():\n    await run_in_threadpool(parse_file)  # no loop blocking\n    await llm_call()\nBenchmark: 20× faster than the naive mixed version.\n\n\n\n\n\nasync def is not a performance flag — it’s a contract: “I will not block the loop.”\nFor blocking I/O or CPU-bound work:\n\nUse def (FastAPI runs it in a thread pool)\nOr await run_in_threadpool(...) inside async functions\n\nReserve async for truly non-blocking code.\n\nAsync is powerful, but misused, it’s the easiest way to turn a fast FastAPI app into a single-lane road with a 10-mile backup."
+  },
+  {
+    "objectID": "posts/fastapi-async-trap/index.html#why-it-worked",
+    "href": "posts/fastapi-async-trap/index.html#why-it-worked",
+    "title": "Stop Using async in FastAPI (Unless You Mean It)",
+    "section": "",
+    "text": "FastAPI treats sync and async endpoints very differently:\n\ndef (sync) → runs in a thread pool, so blocking work happens outside the event loop.\nasync def → runs on the event loop thread, so blocking work freezes everything.\n\nSince parse_file() was mostly I/O-bound (disk reads, system calls), the GIL wasn’t an issue — multiple requests could run in parallel in separate threads.\nThe “fake async” version was a classic footgun: blocking calls inside an async function lock up the loop and kill concurrency.\n\nIf you want the long-form, burger-themed explanation, see FastAPI’s own docs on async."
+  },
+  {
+    "objectID": "posts/fastapi-async-trap/index.html#quick-demo",
+    "href": "posts/fastapi-async-trap/index.html#quick-demo",
+    "title": "Stop Using async in FastAPI (Unless You Mean It)",
+    "section": "",
+    "text": "import time\nfrom fastapi import FastAPI\n\napp = FastAPI()\n\n@app.get(\"/sync\")\ndef sync_endpoint():\n    time.sleep(0.5)  # blocks, but in a thread\n\n@app.get(\"/async\")\nasync def async_endpoint():\n    time.sleep(0.5)  # blocks event loop\n\n\n\n\n\nEndpoint\nReq/sec\nTime/req\n\n\n\n\n/sync\n60\n0.8s\n\n\n/async\n1.98\n31s\n\n\n\nThe sync version is ~30× faster here."
+  },
+  {
+    "objectID": "posts/fastapi-async-trap/index.html#mixing-sync-async",
+    "href": "posts/fastapi-async-trap/index.html#mixing-sync-async",
+    "title": "Stop Using async in FastAPI (Unless You Mean It)",
+    "section": "",
+    "text": "What if you need both?\n@app.post(\"/mixed\")\nasync def mixed_endpoint():\n    parse_file()        # blocking\n    await llm_call()    # true async\nThis must be async because it uses await, but parse_file() still blocks the loop.\nSolution: offload the blocking work:\nfrom fastapi.concurrency import run_in_threadpool\n\n@app.get(\"/mixed-fast\")\nasync def mixed_endpoint():\n    await run_in_threadpool(parse_file)  # no loop blocking\n    await llm_call()\nBenchmark: 20× faster than the naive mixed version."
+  },
+  {
+    "objectID": "posts/fastapi-async-trap/index.html#takeaways",
+    "href": "posts/fastapi-async-trap/index.html#takeaways",
+    "title": "Stop Using async in FastAPI (Unless You Mean It)",
+    "section": "",
+    "text": "async def is not a performance flag — it’s a contract: “I will not block the loop.”\nFor blocking I/O or CPU-bound work:\n\nUse def (FastAPI runs it in a thread pool)\nOr await run_in_threadpool(...) inside async functions\n\nReserve async for truly non-blocking code.\n\nAsync is powerful, but misused, it’s the easiest way to turn a fast FastAPI app into a single-lane road with a 10-mile backup."
+  },
+  {
     "objectID": "posts/python-setup-2024/index.html",
     "href": "posts/python-setup-2024/index.html",
     "title": "Setting Up a Python Project in 2024: uv and vscode",
@@ -46,6 +81,6 @@
     "href": "index.html",
     "title": "Random Bytes",
     "section": "",
-    "text": "Setting Up a Python Project in 2024: uv and vscode\n\n\n\n\n\n\npython\n\n\npackaging\n\n\n\n\n\n\n\n\n\nSep 8, 2024\n\n\nphi\n\n\n\n\n\n\nNo matching items"
+    "text": "Stop Using async in FastAPI (Unless You Mean It)\n\n\n\n\n\n\npython\n\n\nfastapi\n\n\nasync\n\n\n\n\n\n\n\n\n\nAug 8, 2025\n\n\nphi\n\n\n\n\n\n\n\n\n\n\n\n\nSetting Up a Python Project in 2024: uv and vscode\n\n\n\n\n\n\npython\n\n\npackaging\n\n\n\n\n\n\n\n\n\nSep 8, 2024\n\n\nphi\n\n\n\n\n\n\nNo matching items"
   }
 ]
