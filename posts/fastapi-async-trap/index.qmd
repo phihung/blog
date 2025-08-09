@@ -1,0 +1,115 @@
+---
+title: "Stop Using async in FastAPI (Unless You Mean It)"
+author: "phi"
+date: "2025-08-08"
+categories: [python, fastapi, async]
+format:
+  html:
+    toc: true
+---
+
+# Stop Using async in FastAPI (Unless You Mean It)
+
+I recently debugged a legacy FastAPI app that was crawling under load. The culprit? Every endpoint was marked `async def`, including ones doing heavy, blocking work.
+
+Example:
+
+```python
+@app.post("/my-route")
+async def my_endpoint():
+    return parse_file()  # may take up to 60 seconds
+```
+
+The original developer probably assumed “async = faster.” In reality, this endpoint **processed one request at a time**. Each call blocked the asyncio event loop until it finished, so nothing else could run.
+
+The fix was embarrassingly simple:
+
+```python
+@app.post("/my-route-sync")
+def my_endpoint_sync():
+    return parse_file()
+```
+
+---
+
+## Why it worked
+
+FastAPI treats sync and async endpoints very differently:
+
+* **`def` (sync)** → runs in a thread pool, so blocking work happens outside the event loop.
+* **`async def`** → runs on the event loop thread, so blocking work freezes everything.
+
+Since `parse_file()` was mostly I/O-bound (disk reads, system calls), the GIL wasn’t an issue — multiple requests could run in parallel in separate threads.
+
+The “fake async” version was a classic footgun: blocking calls inside an async function lock up the loop and kill concurrency.
+
+> If you want the long-form, burger-themed explanation, see [FastAPI’s own docs on async](https://fastapi.tiangolo.com/async/).
+
+---
+
+## Quick demo
+
+```python
+import time
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/sync")
+def sync_endpoint():
+    time.sleep(0.5)  # blocks, but in a thread
+
+@app.get("/async")
+async def async_endpoint():
+    time.sleep(0.5)  # blocks event loop
+```
+
+### Benchmark (ApacheBench, 300 req, 100 concurrency)
+
+| Endpoint | Req/sec | Time/req |
+| -------- | ------- | -------- |
+| `/sync`  | 60      | 0.8s     |
+| `/async` | 1.98    | 31s      |
+
+The sync version is **\~30× faster** here.
+
+---
+
+## Mixing sync + async
+
+What if you need both?
+
+```python
+@app.post("/mixed")
+async def mixed_endpoint():
+    parse_file()        # blocking
+    await llm_call()    # true async
+```
+
+This must be `async` because it uses `await`, but `parse_file()` still blocks the loop.
+
+**Solution:** offload the blocking work:
+
+```python
+from fastapi.concurrency import run_in_threadpool
+
+@app.get("/mixed-fast")
+async def mixed_endpoint():
+    await run_in_threadpool(parse_file)  # no loop blocking
+    await llm_call()
+```
+
+Benchmark: **20× faster** than the naive mixed version.
+
+---
+
+## Takeaways
+
+* `async def` is **not** a performance flag — it’s a contract: “I will not block the loop.”
+* For blocking I/O or CPU-bound work:
+
+  * Use `def` (FastAPI runs it in a thread pool)
+  * Or `await run_in_threadpool(...)` inside async functions
+* Reserve `async` for truly non-blocking code.
+
+Async is powerful, but misused, it’s the easiest way to turn a fast FastAPI app into a single-lane road with a 10-mile backup.
